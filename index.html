@@ -213,6 +213,21 @@ tr:hover td{background:var(--bg3);}
 .chart-wrap{position:relative;height:200px;}
 .chart-wrap-lg{position:relative;height:260px;}
 
+/* CRIATIVOS */
+.criativos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;padding:4px;}
+.criativo-card{background:var(--bg2);border:1px solid var(--border);position:relative;transition:border-color .15s;}
+.criativo-card:hover{border-color:var(--gold);}
+.criativo-thumb{width:100%;height:160px;object-fit:cover;display:block;background:var(--bg3);}
+.criativo-thumb-placeholder{width:100%;height:160px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;}
+.criativo-body{padding:12px;}
+.criativo-name{font-family:var(--cond);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.criativo-metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.criativo-metric{background:#000;padding:6px 8px;}
+.criativo-metric .lbl{font-family:var(--mono);font-size:8px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;}
+.criativo-metric .val{font-family:var(--cond);font-size:16px;font-weight:700;}
+.criativo-actions{display:flex;gap:4px;padding:10px 12px;border-top:1px solid var(--border);background:var(--bg3);}
+.bidcap-input{background:#000;border:1px solid var(--border2);color:var(--gold);font-family:var(--mono);font-size:11px;padding:4px 8px;width:80px;outline:none;}
+.bidcap-input:focus{border-color:var(--gold);}
 @media(max-width:1200px){.metrics-grid{grid-template-columns:repeat(3,1fr);}}
 @media(max-width:900px){.metrics-grid{grid-template-columns:repeat(2,1fr);}.grid-2,.grid-3{grid-template-columns:1fr;}}
 @media(max-width:640px){.sidebar{display:none;}.main{margin-left:0;padding:16px;}}
@@ -253,6 +268,7 @@ tr:hover td{background:var(--bg3);}
       <div class="nav-section">Configuração</div>
       <div class="nav-item" onclick="nav('produtos')"><span class="nav-icon">📦</span> Produtos</div>
       <div class="nav-item" onclick="nav('webhooks')"><span class="nav-icon">🔗</span> Webhooks</div>
+      <div class="nav-item" onclick="nav('criativos')"><span class="nav-icon">🎨</span> Criativos</div>
       <div class="nav-item" onclick="nav('regras')"><span class="nav-icon">⚡</span> Regras Auto</div>
       <div class="nav-item" onclick="nav('config')"><span class="nav-icon">⚙</span> Configurações</div>
     </nav>
@@ -306,6 +322,7 @@ tr:hover td{background:var(--bg3);}
 
       <!-- ROW 3: Meta -->
       <div class="metrics-grid">
+        <div class="metric-card"><div class="mc-label">Page Views</div><div class="mc-value gold" id="d-pageviews">—</div><div class="mc-sub">visitas na página</div></div>
         <div class="metric-card"><div class="mc-label">Cliques</div><div class="mc-value" id="d-cliques">—</div><div class="mc-sub">link clicks</div></div>
         <div class="metric-card"><div class="mc-label">Impressões</div><div class="mc-value" id="d-impressoes">—</div><div class="mc-sub">total</div></div>
         <div class="metric-card"><div class="mc-label">CPM</div><div class="mc-value amber" id="d-cpm">—</div><div class="mc-sub">custo por mil</div></div>
@@ -421,6 +438,33 @@ tr:hover td{background:var(--bg3);}
         <div class="ph-left"><div class="ph-title">Webhooks</div><div class="ph-sub">// configure nas plataformas de venda</div></div>
       </div>
       <div id="webhooks-content"><div class="loading">Carregando...</div></div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-header"><span class="card-title">Script de Page View — Cole no seu Checkout</span></div>
+        <div class="card-body">
+          <div style="background:#000;border:1px solid var(--border2);padding:14px;font-family:var(--mono);font-size:11px;color:var(--gold);margin-bottom:12px;line-height:1.8;word-break:break-all;" id="pv-script">Carregando...</div>
+          <button class="btn-sm" onclick="copyPvScript()" style="border-color:var(--gold);color:var(--gold)">⎘ Copiar Script</button>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:10px;line-height:1.6;">
+            Cole este script no &lt;head&gt; de todas as suas páginas de checkout e vendas.<br>
+            Ele rastreia visitas e envia os dados para o seu painel automaticamente.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CRIATIVOS -->
+    <div class="page" id="page-criativos">
+      <div class="ph">
+        <div class="ph-left"><div class="ph-title">Criativos</div><div class="ph-sub">// performance por anúncio com thumbnail</div></div>
+        <div class="ph-right">
+          <div class="date-filter">
+            <button class="df-btn active" onclick="setRange(7,this)">7d</button>
+            <button class="df-btn" onclick="setRange(15,this)">15d</button>
+            <button class="df-btn" onclick="setRange(30,this)">30d</button>
+          </div>
+          <button class="btn-primary" onclick="loadCriativos()">↻ Atualizar</button>
+        </div>
+      </div>
+      <div id="criativos-grid"><div class="loading">Clique em Atualizar para carregar os criativos.</div></div>
     </div>
 
     <!-- REGRAS -->
@@ -653,7 +697,7 @@ function showApp() {
   loadDashboard();
   loadLinks();
   loadProdutos();
-  loadWebhooks();
+  loadWebhooksWithScript();
   renderDashSelector();
   loadRules();
   startRuleEngine();
@@ -674,6 +718,7 @@ function nav(page) {
   if (page === 'checkouts') loadCheckouts();
   if (page === 'campanhas') loadCampanhas('campaign');
   if (page === 'regras') loadRules();
+  if (page === 'criativos') loadCriativos();
 }
 
 function setRange(days, btn) {
@@ -737,6 +782,10 @@ async function loadDashboard() {
   g('d-cr').textContent = cr.toFixed(1) + '%';
   g('d-cpa').textContent = fmt(cpa);
   g('d-cpi').textContent = fmt(cpi);
+  // Page views do Supabase
+  sb.from('page_views').select('id', {count:'exact'}).eq('user_id', uid).gte('viewed_at', sinceISO).then(({count}) => {
+    g('d-pageviews').textContent = fmtNum(count||0);
+  });
   g('d-cliques').textContent = fmtNum(cliques);
   g('d-impressoes').textContent = fmtNum(impressoes);
   g('d-cpm').textContent = fmt(cpm);
@@ -1391,6 +1440,121 @@ function saveDashboard() {
   closeModal('modal-dash');
   renderDashSelector();
   showToast('Dashboard criado!');
+}
+
+// ── PAGE VIEWS ────────────────────────────────────────────────
+function copyPvScript() {
+  const script = buildPvScript();
+  navigator.clipboard.writeText(script).then(() => showToast('Script copiado!'));
+}
+
+function buildPvScript() {
+  return `<script>
+(function(){
+  var s='${SUPABASE_URL}/functions/v1/pageview';
+  var u=encodeURIComponent(window.location.href);
+  var p=new URLSearchParams(window.location.search);
+  fetch(s,{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({url:u,utm_source:p.get('utm_source'),utm_medium:p.get('utm_medium'),utm_campaign:p.get('utm_campaign'),utm_term:p.get('utm_term'),utm_content:p.get('utm_content'),referrer:document.referrer})});
+})();
+<\/script>`;
+}
+
+async function loadWebhooksWithScript() {
+  await loadWebhooks();
+  const el = g('pv-script');
+  if (el) el.textContent = buildPvScript();
+}
+
+// ── CRIATIVOS COM THUMBNAIL ────────────────────────────────────
+async function loadCriativos() {
+  const el = g('criativos-grid');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Buscando criativos na API do Meta...</div>';
+  
+  const since = new Date(); since.setDate(since.getDate() - currentRange);
+  const sinceStr = since.toISOString().slice(0,10);
+  const today = new Date().toISOString().slice(0,10);
+  
+  try {
+    // Busca ads com insights + thumbnail
+    const url = `https://graph.facebook.com/v19.0/${META_ACCOUNT}/ads?fields=id,name,status,bid_amount,creative{thumbnail_url,body,title,image_url},insights.date_preset(last_${currentRange}d){spend,impressions,clicks,ctr,cpm,cpc,actions,action_values}&limit=50&access_token=${META_TOKEN}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    
+    if (json.error) { el.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div>${json.error.message}</div>`; return; }
+    
+    const ads = (json.data || []).filter(a => a.insights?.data?.length);
+    
+    if (!ads.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">🎨</div>Nenhum criativo com dados no período.</div>'; return; }
+    
+    el.innerHTML = `<div class="criativos-grid">${ads.map(ad => {
+      const ins = ad.insights?.data?.[0] || {};
+      const spend = parseFloat(ins.spend||0);
+      const impressions = parseInt(ins.impressions||0);
+      const clicks = parseInt(ins.clicks||0);
+      const ctr = parseFloat(ins.ctr||0);
+      const cpm = parseFloat(ins.cpm||0);
+      const cpc = parseFloat(ins.cpc||0);
+      const purchases = (ins.actions||[]).find(a => a.action_type==='purchase');
+      const revenue = (ins.action_values||[]).find(a => a.action_type==='purchase');
+      const nPurchases = parseInt(purchases?.value||0);
+      const roas = spend > 0 && revenue ? (parseFloat(revenue.value||0)/spend).toFixed(2) : '—';
+      const thumb = ad.creative?.thumbnail_url || ad.creative?.image_url || '';
+      const bidcap = ad.bid_amount ? (ad.bid_amount/100).toFixed(2) : '';
+      const statusColor = ad.status === 'ACTIVE' ? 'var(--green)' : 'var(--muted)';
+      
+      return `<div class="criativo-card">
+        ${thumb 
+          ? `<img class="criativo-thumb" src="${thumb}" alt="criativo" onerror="this.style.display='none';this.nextSibling.style.display='flex'"/><div class="criativo-thumb-placeholder" style="display:none">SEM PREVIEW</div>`
+          : `<div class="criativo-thumb-placeholder">SEM PREVIEW</div>`}
+        <div class="criativo-body">
+          <div class="criativo-name" title="${esc(ad.name)}">${esc(ad.name)}</div>
+          <div class="criativo-metrics">
+            <div class="criativo-metric"><div class="lbl">Investido</div><div class="val" style="color:var(--gold)">${fmt(spend)}</div></div>
+            <div class="criativo-metric"><div class="lbl">ROAS</div><div class="val" style="color:${roas!=='—'&&parseFloat(roas)>=2?'var(--green)':roas!=='—'&&parseFloat(roas)>=1?'var(--gold)':'var(--red)'}">${roas}${roas!=='—'?'x':''}</div></div>
+            <div class="criativo-metric"><div class="lbl">CTR</div><div class="val" style="color:var(--blue)">${ctr.toFixed(2)}%</div></div>
+            <div class="criativo-metric"><div class="lbl">CPM</div><div class="val">${fmt(cpm)}</div></div>
+            <div class="criativo-metric"><div class="lbl">CPC</div><div class="val">${fmt(cpc)}</div></div>
+            <div class="criativo-metric"><div class="lbl">Vendas</div><div class="val" style="color:var(--green)">${nPurchases}</div></div>
+          </div>
+        </div>
+        <div class="criativo-actions">
+          <span style="font-family:var(--mono);font-size:9px;color:${statusColor};flex:1;align-self:center">${ad.status}</span>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--muted);align-self:center;margin-right:4px">Bid:</span>
+          <input class="bidcap-input" type="number" value="${bidcap}" placeholder="R$" id="bid-${ad.id}" step="0.01"/>
+          <button class="btn-sm" onclick="saveBidcap('${ad.id}')" style="border-color:var(--gold);color:var(--gold)">✓</button>
+          <button class="btn-sm ${ad.status==='ACTIVE'?'danger':''}" onclick="toggleCampaign('${ad.id}','${ad.status==='ACTIVE'?'PAUSED':'ACTIVE'}')">${ad.status==='ACTIVE'?'⏸':'▶'}</button>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+    
+  } catch(e) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div>Erro: ${e.message}</div>`;
+  }
+}
+
+// ── BIDCAP ─────────────────────────────────────────────────────
+async function saveBidcap(adId) {
+  const input = g('bid-' + adId);
+  if (!input) return;
+  const val = parseFloat(input.value);
+  if (isNaN(val) || val <= 0) { showToast('Valor inválido', true); return; }
+  const bidCents = Math.round(val * 100);
+  try {
+    const res = await fetch(`https://graph.facebook.com/v19.0/${adId}?bid_amount=${bidCents}&access_token=${META_TOKEN}`, {
+      method: 'POST'
+    });
+    const json = await res.json();
+    if (json.success) {
+      showToast(`Bidcap atualizado: R$ ${val.toFixed(2)}`);
+      if (WA_APIKEY) await sendWhatsApp(`✅ Bidcap atualizado para R$ ${val.toFixed(2)} no anúncio.`);
+    } else {
+      showToast('Erro: ' + (json.error?.message || 'Verifique permissões'), true);
+    }
+  } catch(e) {
+    showToast('Erro ao salvar bidcap', true);
+  }
 }
 
 // ── HELPERS ───────────────────────────────────────────────────
