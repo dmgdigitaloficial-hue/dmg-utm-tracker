@@ -935,7 +935,7 @@ async function syncMeta() {
   showToast('Sincronizando Meta Ads...');
   const since = new Date(); since.setDate(since.getDate() - currentRange);
   const sinceStr = since.toISOString().slice(0,10);
-  const url = `https://graph.facebook.com/v19.0/${META_ACCOUNT}/insights?fields=campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,spend,impressions,clicks,reach,cpm,cpc,ctr,link_clicks,landing_page_views&time_range={"since":"${sinceStr}","until":"${new Date().toISOString().slice(0,10)}"}&time_increment=1&level=ad&limit=500&access_token=${META_TOKEN}`;
+  const url = `https://graph.facebook.com/v19.0/${META_ACCOUNT}/insights?fields=campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,spend,impressions,clicks,reach,cpm,cpc,ctr&time_range={"since":"${sinceStr}","until":"${new Date().toISOString().slice(0,10)}"}&time_increment=1&level=ad&limit=500&access_token=${META_TOKEN}`;
   try {
     const res = await fetch(url);
     const json = await res.json();
@@ -953,8 +953,8 @@ async function syncMeta() {
       cpm: parseFloat(d.cpm||0),
       cpc: parseFloat(d.cpc||0),
       ctr: parseFloat(d.ctr||0),
-      link_clicks: parseInt(d.link_clicks||0),
-      landing_page_views: parseInt(d.landing_page_views||0),
+      link_clicks: parseInt(d.clicks||0),
+      landing_page_views: 0,
     }));
     if (rows.length) {
       await sb.from('meta_insights').upsert(rows, { onConflict: 'user_id,date,campaign_id,adset_id,ad_id' });
