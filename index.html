@@ -230,7 +230,33 @@ tr:hover td{background:var(--bg3);}
 .bidcap-input:focus{border-color:var(--gold);}
 @media(max-width:1200px){.metrics-grid{grid-template-columns:repeat(3,1fr);}}
 @media(max-width:900px){.metrics-grid{grid-template-columns:repeat(2,1fr);}.grid-2,.grid-3{grid-template-columns:1fr;}}
-@media(max-width:640px){.sidebar{display:none;}.main{margin-left:0;padding:16px;}}
+@media(max-width:640px){
+  .sidebar{
+    position:fixed;top:0;left:-240px;bottom:0;width:240px;
+    transition:left .25s;z-index:200;
+  }
+  .sidebar.open{left:0;}
+  .main{margin-left:0;padding:12px;}
+  .mobile-bar{
+    display:flex;align-items:center;justify-content:space-between;
+    position:fixed;top:0;left:0;right:0;height:52px;
+    background:#000;border-bottom:1px solid var(--border2);
+    padding:0 16px;z-index:150;
+  }
+  .mobile-title{font-family:var(--cond);font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+  .mobile-title span{color:var(--gold);}
+  .hamburger{background:none;border:none;cursor:pointer;padding:4px;color:var(--text);font-size:22px;}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:190;display:none;}
+  .overlay.open{display:block;}
+  .main{padding-top:64px;}
+  .metrics-grid{grid-template-columns:1fr 1fr;}
+  .ph-title{font-size:22px;}
+  .ph{flex-direction:column;gap:10px;}
+  .ph-right{flex-wrap:wrap;}
+  .mc-value{font-size:20px;}
+  .criativos-grid{grid-template-columns:1fr;}
+}
+@media(min-width:641px){.mobile-bar{display:none;}.overlay{display:none!important;}}
 </style>
 <script>
 // Service Worker registration
@@ -260,7 +286,13 @@ if ('serviceWorker' in navigator && 'PushManager' in window) {
 
 <!-- APP -->
 <div id="app">
-  <div class="sidebar">
+  <!-- Mobile bar -->
+  <div class="mobile-bar">
+    <div class="mobile-title">DMG <span>Performance</span></div>
+    <button class="hamburger" onclick="toggleMenu()">☰</button>
+  </div>
+  <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+  <div class="sidebar" id="sidebar">
     <div class="sb-logo">
       <div class="mark">DMG Digital</div>
       <div class="name">Performance<span>.</span></div>
@@ -1687,6 +1719,29 @@ function showToast(msg, isError=false) {
 
 // Enter no login
 ['l-email','l-pass'].forEach(id => g(id)?.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); }));
+
+// Mobile menu
+function toggleMenu() {
+  const sidebar = g('sidebar');
+  const overlay = g('overlay');
+  if (!sidebar) return;
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('open');
+}
+
+// Fecha menu ao clicar em item de nav no mobile
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 640) {
+        const sidebar = g('sidebar');
+        const overlay = g('overlay');
+        if (sidebar) sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
+      }
+    });
+  });
+});
 
 init();
 </script>
