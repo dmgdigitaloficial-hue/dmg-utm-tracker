@@ -253,6 +253,7 @@ tr:hover td{background:var(--bg3);}
       <div class="nav-section">Configuração</div>
       <div class="nav-item" onclick="nav('produtos')"><span class="nav-icon">📦</span> Produtos</div>
       <div class="nav-item" onclick="nav('webhooks')"><span class="nav-icon">🔗</span> Webhooks</div>
+      <div class="nav-item" onclick="nav('regras')"><span class="nav-icon">⚡</span> Regras Auto</div>
       <div class="nav-item" onclick="nav('config')"><span class="nav-icon">⚙</span> Configurações</div>
     </nav>
     <div class="sb-footer">
@@ -274,6 +275,8 @@ tr:hover td{background:var(--bg3);}
           <div class="ph-sub" id="dash-date">—</div>
         </div>
         <div class="ph-right">
+          <div id="dash-selector" style="display:flex;gap:2px;background:#000;border:1px solid var(--border2);padding:2px;"></div>
+          <button class="btn-sm" onclick="openDashModal()" style="border-color:var(--gold);color:var(--gold)">+ Dashboard</button>
           <div class="date-filter">
             <button class="df-btn active" onclick="setRange(7,this)">7d</button>
             <button class="df-btn" onclick="setRange(15,this)">15d</button>
@@ -420,6 +423,34 @@ tr:hover td{background:var(--bg3);}
       <div id="webhooks-content"><div class="loading">Carregando...</div></div>
     </div>
 
+    <!-- REGRAS -->
+    <div class="page" id="page-regras">
+      <div class="ph">
+        <div class="ph-left"><div class="ph-title">Regras Automáticas</div><div class="ph-sub">// ações automáticas baseadas em métricas</div></div>
+        <div class="ph-right"><button class="btn-primary" onclick="openRuleModal()">+ Nova Regra</button></div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><span class="card-title">Alertas WhatsApp — CallMeBot</span></div>
+        <div class="card-body">
+          <div style="background:#000;border:1px solid var(--gold3);padding:14px;margin-bottom:14px;font-family:var(--mono);font-size:10px;color:var(--gold);line-height:1.8;">
+            1. Envie uma mensagem para +34 644 31 93 87 no WhatsApp com o texto:<br>
+            <strong style="color:#fff">I allow callmebot to send me messages</strong><br>
+            2. Você receberá sua API Key em segundos<br>
+            3. Cole a API Key abaixo
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-end">
+            <div class="form-field" style="flex:1;margin:0"><label>Sua API Key do CallMeBot</label><input type="text" id="wa-apikey" placeholder="123456"/></div>
+            <button class="btn-primary" onclick="saveWaKey()">Salvar</button>
+            <button class="btn-secondary" onclick="testWa()">Testar</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Regras Configuradas</span></div>
+        <div id="rules-list"><div class="loading">Nenhuma regra configurada.</div></div>
+      </div>
+    </div>
+
     <!-- CONFIG -->
     <div class="page" id="page-config">
       <div class="ph">
@@ -500,6 +531,69 @@ tr:hover td{background:var(--bg3);}
   </div>
 </div>
 
+<!-- MODAL REGRA -->
+<div class="modal-overlay" id="modal-rule" onclick="closeModalOutside(event,'modal-rule')">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Nova Regra Automática</div><button class="modal-close" onclick="closeModal('modal-rule')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-field"><label>Nome da Regra *</label><input type="text" id="rl-name" placeholder="Ex: Pausar se CPA alto"/></div>
+      <div class="form-row">
+        <div class="form-field"><label>Métrica *</label>
+          <select id="rl-metric">
+            <option value="cpa">CPA (custo por venda)</option>
+            <option value="roas">ROAS</option>
+            <option value="ctr">CTR (%)</option>
+            <option value="spend">Gasto total (R$)</option>
+            <option value="cpm">CPM</option>
+            <option value="cpc">CPC</option>
+          </select>
+        </div>
+        <div class="form-field"><label>Condição *</label>
+          <select id="rl-cond">
+            <option value="gt">Maior que</option>
+            <option value="lt">Menor que</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-field"><label>Valor *</label><input type="number" id="rl-value" placeholder="Ex: 50" step="0.01"/></div>
+      <div class="form-field"><label>Ação *</label>
+        <select id="rl-action">
+          <option value="alert_wa">Alertar no WhatsApp</option>
+          <option value="pause_campaign">Pausar Campanha no Meta</option>
+          <option value="alert_and_pause">Alertar + Pausar</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Verificar a cada</label>
+        <select id="rl-freq">
+          <option value="30">30 minutos</option>
+          <option value="60">1 hora</option>
+          <option value="360">6 horas</option>
+          <option value="1440">24 horas</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('modal-rule')">Cancelar</button>
+        <button class="btn-save" onclick="saveRule()">Salvar Regra</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DASHBOARD -->
+<div class="modal-overlay" id="modal-dash" onclick="closeModalOutside(event,'modal-dash')">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Novo Dashboard</div><button class="modal-close" onclick="closeModal('modal-dash')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-field"><label>Nome do Dashboard *</label><input type="text" id="nd-name" placeholder="Ex: Produto A"/></div>
+      <div class="form-field"><label>Filtrar por Produto</label><select id="nd-product"><option value="">Todos os produtos</option></select></div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('modal-dash')">Cancelar</button>
+        <button class="btn-save" onclick="saveDashboard()">Criar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -513,6 +607,14 @@ const WEBHOOK_BASE  = `${SUPABASE_URL}/functions/v1`;
 let META_TOKEN    = 'EAARq5HyHt1wBRc75nPmy8Uoj0NTH8vh2ZBoxsAwOUy0rafliFvMEpVPYNfyqu8sJR8LrgHLAKWoHcylknjMcyCfZBag5wydqJVz1q2JtPRpRremhZCUM1Cctj6wpiBvPzpOGHzypBr815SxwKJPwVZBtNXNfIyoPjvRFN6oxdqIdE72ZAZAUkvU5pRfBsiYPZAANg2eTPbKrTQTrf7vOSVRdJFBcVyXzALaF0Awbks2SAH2zpYFhQ7nmF2nh3bxBUmZCFpZBDfApGm1xvSAgkQET8GoBAZAdJ6pCleJgZDZD';
 let META_ACCOUNT  = 'act_801416983012042';
 let META_APP_ID   = '1243429481199452';
+const PIXEL_ID    = '801127956373324';
+const PIXEL_TOKEN = 'EAAZAQhQjgyDQBRVdcwb6Ic0AMtw8CLjZCwsK4oPQtqZAqwLuZA5oVzo3tnzhgSUw1Uz8Gx1ZAqaeiXZCoUfQH9R5TW1ZAz6Jg906owspLn4e08ZA4RwOJCIOrZCjt4YfFwq4sXIbhu6ONtdT1XEjOvtMRqVxC1yaw2aHqxDea43BZC1CVzBASrTZC4pyzn2a9CNAAZDZD';
+const WA_NUMBER   = '17991836357';
+let   WA_APIKEY   = localStorage.getItem('dmg_wa_key') || '';
+let   autoRules   = JSON.parse(localStorage.getItem('dmg_rules') || '[]');
+let   dashboards  = JSON.parse(localStorage.getItem('dmg_dashboards') || '[{"id":"all","name":"GERAL","product_id":null}]');
+let   activeDash  = dashboards[0];
+let   ruleTimer   = null;
 // ─────────────────────────────────────────────────────────────
 
 const { createClient } = supabase;
@@ -552,6 +654,9 @@ function showApp() {
   loadLinks();
   loadProdutos();
   loadWebhooks();
+  renderDashSelector();
+  loadRules();
+  startRuleEngine();
 }
 
 function showLogin() {
@@ -568,6 +673,7 @@ function nav(page) {
   if (page === 'vendas') loadVendas();
   if (page === 'checkouts') loadCheckouts();
   if (page === 'campanhas') loadCampanhas('campaign');
+  if (page === 'regras') loadRules();
 }
 
 function setRange(days, btn) {
@@ -586,8 +692,10 @@ async function loadDashboard() {
   const since = new Date(); since.setDate(since.getDate() - currentRange);
   const sinceISO = since.toISOString();
 
-  // Vendas
-  const { data: sales } = await sb.from('sales').select('*').eq('user_id', uid).gte('created_at', sinceISO);
+  // Vendas (filtrado por produto do dashboard ativo se houver)
+  let salesQ = sb.from('sales').select('*').eq('user_id', uid).gte('created_at', sinceISO);
+  if (activeDash && activeDash.product_id) salesQ = salesQ.eq('product_id', activeDash.product_id);
+  const { data: sales } = await salesQ;
   const approved = (sales||[]).filter(s => s.status === 'approved');
   const checkouts_q = await sb.from('checkouts').select('*', { count: 'exact' }).eq('user_id', uid).gte('created_at', sinceISO);
   const nCheckouts = checkouts_q.count || 0;
@@ -705,12 +813,13 @@ async function loadCampanhas(level) {
   const rows = Object.entries(map).sort((a,b) => b[1].spend - a[1].spend);
   g('campanhas-table').innerHTML = `<div class="tbl-wrap"><table><thead><tr>
     <th>${level === 'campaign' ? 'Campanha' : level === 'adset' ? 'Conjunto' : 'Anúncio'}</th>
-    <th>Investido</th><th>Impressões</th><th>Cliques</th><th>CPM</th><th>CPC</th><th>CTR</th>
+    <th>Investido</th><th>Impressões</th><th>Cliques</th><th>CPM</th><th>CPC</th><th>CTR</th><th>Ações</th>
   </tr></thead><tbody>
   ${rows.map(([name, v]) => {
     const cpm = v.impressions > 0 ? (v.spend/v.impressions*1000) : 0;
     const cpc = v.link_clicks > 0 ? (v.spend/v.link_clicks) : 0;
     const ctr = v.impressions > 0 ? (v.link_clicks/v.impressions*100) : 0;
+    const roasC = v.spend > 0 ? (v.revenue||0)/v.spend : 0;
     return `<tr>
       <td class="campaign-name"><span class="meta-badge">META</span> ${esc(name)}</td>
       <td style="color:var(--amber);font-weight:700">${fmt(v.spend)}</td>
@@ -719,6 +828,10 @@ async function loadCampanhas(level) {
       <td>${fmt(cpm)}</td>
       <td>${fmt(cpc)}</td>
       <td style="color:var(--green)">${ctr.toFixed(2)}%</td>
+      <td class="actions">
+        <button class="btn-sm" onclick="toggleCampaign('${v.campaign_id||''}','ACTIVE')" title="Ativar">▶</button>
+        <button class="btn-sm danger" onclick="toggleCampaign('${v.campaign_id||''}','PAUSED')" title="Pausar">⏸</button>
+      </td>
     </tr>`;
   }).join('')}
   </tbody></table></div>`;
@@ -911,6 +1024,7 @@ async function loadConfig() {
     g('cfg-account').value = META_ACCOUNT;
     g('cfg-appid').value = META_APP_ID;
   }
+  if (WA_APIKEY) g('wa-apikey') && (g('wa-apikey').value = WA_APIKEY);
 }
 
 async function saveConfig() {
@@ -1057,6 +1171,226 @@ function renderBarChart(id, labels, data, color) {
       }, responsive:true, maintainAspectRatio:false
     }
   });
+}
+
+// ── PIXEL SERVER-SIDE ────────────────────────────────────────
+async function sendPixelEvent(eventName, data = {}) {
+  const payload = {
+    data: [{
+      event_name: eventName,
+      event_time: Math.floor(Date.now() / 1000),
+      action_source: 'website',
+      user_data: {
+        client_user_agent: navigator.userAgent,
+        fbc: getCookie('_fbc'),
+        fbp: getCookie('_fbp'),
+      },
+      custom_data: data,
+    }]
+  };
+  try {
+    await fetch(`https://graph.facebook.com/v19.0/${PIXEL_ID}/events?access_token=${PIXEL_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch(e) { console.log('Pixel error:', e); }
+}
+
+function getCookie(name) {
+  const v = document.cookie.match('(^|;)\s*' + name + '\s*=\s*([^;]+)');
+  return v ? v.pop() : null;
+}
+
+// ── WHATSAPP CALLMEBOT ────────────────────────────────────────
+function saveWaKey() {
+  WA_APIKEY = g('wa-apikey').value.trim();
+  localStorage.setItem('dmg_wa_key', WA_APIKEY);
+  showToast('API Key salva!');
+}
+
+async function testWa() {
+  if (!WA_APIKEY) { showToast('Configure sua API Key primeiro', true); return; }
+  await sendWhatsApp('🦇 DMG Performance Tracker ativo! Alertas configurados com sucesso.');
+}
+
+async function sendWhatsApp(msg) {
+  if (!WA_APIKEY) return;
+  const encoded = encodeURIComponent(msg);
+  try {
+    await fetch(`https://api.callmebot.com/whatsapp.php?phone=${WA_NUMBER}&text=${encoded}&apikey=${WA_APIKEY}`);
+  } catch(e) { console.log('WA error:', e); }
+}
+
+// ── REGRAS AUTOMÁTICAS ────────────────────────────────────────
+function openRuleModal() { openModal('modal-rule'); }
+
+function saveRule() {
+  const name   = g('rl-name').value.trim();
+  const metric = g('rl-metric').value;
+  const cond   = g('rl-cond').value;
+  const value  = parseFloat(g('rl-value').value);
+  const action = g('rl-action').value;
+  const freq   = parseInt(g('rl-freq').value);
+  if (!name || isNaN(value)) { showToast('Preencha todos os campos', true); return; }
+  const rule = { id: Date.now(), name, metric, cond, value, action, freq, active: true, lastRun: 0 };
+  autoRules.push(rule);
+  localStorage.setItem('dmg_rules', JSON.stringify(autoRules));
+  closeModal('modal-rule');
+  showToast('Regra criada!');
+  loadRules();
+}
+
+function deleteRule(id) {
+  autoRules = autoRules.filter(r => r.id !== id);
+  localStorage.setItem('dmg_rules', JSON.stringify(autoRules));
+  loadRules();
+  showToast('Regra removida.');
+}
+
+function toggleRule(id) {
+  const r = autoRules.find(r => r.id === id);
+  if (r) { r.active = !r.active; localStorage.setItem('dmg_rules', JSON.stringify(autoRules)); loadRules(); }
+}
+
+function loadRules() {
+  const el = g('rules-list');
+  if (!el) return;
+  if (!autoRules.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">⚡</div>Nenhuma regra configurada.</div>'; return; }
+  const metricLabel = { cpa:'CPA', roas:'ROAS', ctr:'CTR', spend:'Gasto', cpm:'CPM', cpc:'CPC' };
+  const condLabel = { gt:'maior que', lt:'menor que' };
+  const actionLabel = { alert_wa:'Alertar WhatsApp', pause_campaign:'Pausar Campanha', alert_and_pause:'Alertar + Pausar' };
+  el.innerHTML = `<div class="tbl-wrap"><table><thead><tr>
+    <th>Nome</th><th>Condição</th><th>Ação</th><th>Frequência</th><th>Status</th><th>Ações</th>
+  </tr></thead><tbody>
+  ${autoRules.map(r => `<tr>
+    <td style="font-weight:600">${esc(r.name)}</td>
+    <td style="font-family:var(--mono);font-size:11px;color:var(--gold)">${metricLabel[r.metric]} ${condLabel[r.cond]} ${r.value}</td>
+    <td><span class="badge badge-blue">${actionLabel[r.action]}</span></td>
+    <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${r.freq >= 1440 ? '24h' : r.freq >= 60 ? r.freq/60+'h' : r.freq+'min'}</td>
+    <td><span class="badge ${r.active ? 'badge-green' : 'badge-gray'}" style="cursor:pointer" onclick="toggleRule(${r.id})">${r.active ? 'ATIVA' : 'PAUSA'}</span></td>
+    <td class="actions"><button class="btn-sm danger" onclick="deleteRule(${r.id})">✕</button></td>
+  </tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+async function runRuleEngine() {
+  if (!currentUser) return;
+  const now = Date.now();
+  for (const rule of autoRules) {
+    if (!rule.active) continue;
+    if (now - rule.lastRun < rule.freq * 60 * 1000) continue;
+    rule.lastRun = now;
+    await checkRule(rule);
+  }
+  localStorage.setItem('dmg_rules', JSON.stringify(autoRules));
+}
+
+async function checkRule(rule) {
+  const since = new Date(); since.setDate(since.getDate() - 7);
+  const uid = currentUser.id;
+  const { data: sales } = await sb.from('sales').select('amount').eq('user_id', uid).eq('status','approved').gte('created_at', since.toISOString());
+  const { data: ins } = await sb.from('meta_insights').select('spend,impressions,link_clicks,cpm,cpc').eq('user_id', uid).gte('date', since.toISOString().slice(0,10));
+  const approved = sales || [];
+  const insights = ins || [];
+  const receita = approved.reduce((a,s) => a + parseFloat(s.amount||0), 0);
+  const spend = insights.reduce((a,i) => a + parseFloat(i.spend||0), 0);
+  const cliques = insights.reduce((a,i) => a + parseInt(i.link_clicks||0), 0);
+  const impressoes = insights.reduce((a,i) => a + parseInt(i.impressions||0), 0);
+  const metricValues = {
+    cpa: approved.length > 0 ? spend / approved.length : 0,
+    roas: spend > 0 ? receita / spend : 0,
+    ctr: impressoes > 0 ? cliques / impressoes * 100 : 0,
+    spend: spend,
+    cpm: impressoes > 0 ? spend / impressoes * 1000 : 0,
+    cpc: cliques > 0 ? spend / cliques : 0,
+  };
+  const val = metricValues[rule.metric];
+  const triggered = rule.cond === 'gt' ? val > rule.value : val < rule.value;
+  if (!triggered) return;
+  const msg = `🚨 ALERTA DMG TRACKER\n\nRegra: ${rule.name}\n${rule.metric.toUpperCase()}: ${val.toFixed(2)} (limite: ${rule.value})\n\nAção: ${rule.action}`;
+  if (rule.action === 'alert_wa' || rule.action === 'alert_and_pause') {
+    await sendWhatsApp(msg);
+    showToast(`⚠️ Regra "${rule.name}" disparada!`, true);
+  }
+  if (rule.action === 'pause_campaign' || rule.action === 'alert_and_pause') {
+    await pauseAllCampaigns();
+  }
+}
+
+function startRuleEngine() {
+  if (ruleTimer) clearInterval(ruleTimer);
+  ruleTimer = setInterval(runRuleEngine, 60 * 1000);
+  setTimeout(runRuleEngine, 3000);
+}
+
+// ── CONTROLE DE CAMPANHAS META ────────────────────────────────
+async function toggleCampaign(campaignId, status) {
+  if (!campaignId) { showToast('ID da campanha não disponível', true); return; }
+  const action = status === 'PAUSED' ? 'pausar' : 'ativar';
+  if (!confirm(`Deseja ${action} esta campanha no Meta?`)) return;
+  try {
+    const res = await fetch(`https://graph.facebook.com/v19.0/${campaignId}?status=${status}&access_token=${META_TOKEN}`, {
+      method: 'POST'
+    });
+    const json = await res.json();
+    if (json.success) {
+      showToast(`Campanha ${status === 'PAUSED' ? 'pausada' : 'ativada'} com sucesso!`);
+      if (WA_APIKEY) await sendWhatsApp(`✅ Campanha ${status === 'PAUSED' ? 'PAUSADA' : 'ATIVADA'} via DMG Tracker.`);
+    } else {
+      showToast('Erro: ' + (json.error?.message || 'Verifique as permissões do token'), true);
+    }
+  } catch(e) {
+    showToast('Erro ao atualizar campanha', true);
+  }
+}
+
+async function pauseAllCampaigns() {
+  const url = `https://graph.facebook.com/v19.0/${META_ACCOUNT}/campaigns?fields=id,status&limit=50&access_token=${META_TOKEN}`;
+  const res = await fetch(url);
+  const json = await res.json();
+  const active = (json.data || []).filter(c => c.status === 'ACTIVE');
+  for (const c of active) {
+    await fetch(`https://graph.facebook.com/v19.0/${c.id}?status=PAUSED&access_token=${META_TOKEN}`, { method: 'POST' });
+  }
+  if (active.length > 0) showToast(`${active.length} campanhas pausadas automaticamente`, true);
+}
+
+// ── MÚLTIPLOS DASHBOARDS ──────────────────────────────────────
+function renderDashSelector() {
+  const el = g('dash-selector');
+  if (!el) return;
+  el.innerHTML = dashboards.map(d => `
+    <button class="df-btn ${activeDash.id === d.id ? 'active' : ''}" onclick="switchDash('${d.id}')">${d.name}</button>
+  `).join('');
+}
+
+function switchDash(id) {
+  activeDash = dashboards.find(d => d.id === id) || dashboards[0];
+  renderDashSelector();
+  loadDashboard();
+}
+
+function openDashModal() {
+  const sel = g('nd-product');
+  if (sel) {
+    sb.from('products').select('*').eq('user_id', currentUser.id).then(({data}) => {
+      sel.innerHTML = '<option value="">Todos os produtos</option>' + (data||[]).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    });
+  }
+  openModal('modal-dash');
+}
+
+function saveDashboard() {
+  const name = g('nd-name').value.trim();
+  const product_id = g('nd-product').value || null;
+  if (!name) { showToast('Nome obrigatório', true); return; }
+  const dash = { id: 'dash_' + Date.now(), name: name.toUpperCase(), product_id };
+  dashboards.push(dash);
+  localStorage.setItem('dmg_dashboards', JSON.stringify(dashboards));
+  closeModal('modal-dash');
+  renderDashSelector();
+  showToast('Dashboard criado!');
 }
 
 // ── HELPERS ───────────────────────────────────────────────────
