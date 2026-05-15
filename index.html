@@ -232,6 +232,14 @@ tr:hover td{background:var(--bg3);}
 @media(max-width:900px){.metrics-grid{grid-template-columns:repeat(2,1fr);}.grid-2,.grid-3{grid-template-columns:1fr;}}
 @media(max-width:640px){.sidebar{display:none;}.main{margin-left:0;padding:16px;}}
 </style>
+<script>
+// Service Worker registration
+if ('serviceWorker' in navigator && 'PushManager' in window) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/dmg-utm-tracker/sw.js').catch(e => console.log('SW:', e));
+  });
+}
+</script>
 </head>
 <body>
 
@@ -273,6 +281,9 @@ tr:hover td{background:var(--bg3);}
       <div class="nav-item" onclick="nav('config')"><span class="nav-icon">⚙</span> Configurações</div>
     </nav>
     <div class="sb-footer">
+      <button id="notif-btn" onclick="togglePushNotifications()" style="width:100%;background:#000;border:1px solid var(--border2);color:var(--muted);font-family:var(--mono);font-size:9px;letter-spacing:2px;padding:8px;cursor:pointer;text-transform:uppercase;margin-bottom:8px;transition:all .15s;">
+        🔔 ATIVAR NOTIFICAÇÕES
+      </button>
       <div class="user-pill">
         <div class="user-dot"></div>
         <div class="user-email" id="u-email">—</div>
@@ -701,6 +712,7 @@ function showApp() {
   renderDashSelector();
   loadRules();
   startRuleEngine();
+  checkNotifStatus();
 }
 
 function showLogin() {
@@ -1555,6 +1567,97 @@ async function saveBidcap(adId) {
   } catch(e) {
     showToast('Erro ao salvar bidcap', true);
   }
+}
+
+// ── PUSH NOTIFICATIONS ───────────────────────────────────────
+const VAPID_PUBLIC_KEY = 'BG646pz0vH4mbemSuXd0woHBzgLXj12K589xwwpc2-UkVttutxvsAyIKWwbY7H6i4DpIimrZV6yw0sTNd1jIRt4';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+async function togglePushNotifications() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    showToast('Push não suportado neste navegador', true);
+    return;
+  }
+
+  const reg = await navigator.serviceWorker.ready;
+  const existing = await reg.pushManager.getSubscription();
+
+  if (existing) {
+    // Desativar
+    await existing.unsubscribe();
+    await sb.from('push_subscriptions').delete().eq('user_id', currentUser.id).eq('endpoint', existing.endpoint);
+    updateNotifBtn(false);
+    showToast('Notificações desativadas');
+    return;
+  }
+
+  // Ativar
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') { showToast('Permissão negada', true); return; }
+
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+
+    const subJson = sub.toJSON();
+    await sb.from('push_subscriptions').upsert({
+      user_id: currentUser.id,
+      endpoint: subJson.endpoint,
+      p256dh: subJson.keys.p256dh,
+      auth: subJson.keys.auth,
+    }, { onConflict: 'endpoint' });
+
+    updateNotifBtn(true);
+    showToast('🔔 Notificações ativadas! Você receberá alertas de vendas.');
+
+    // Envia notificação de teste
+    await sendPushNotification('🦇 DMG Performance Tracker', 'Notificações de venda ativadas com sucesso!');
+  } catch(e) {
+    showToast('Erro: ' + e.message, true);
+  }
+}
+
+async function checkNotifStatus() {
+  const btn = document.getElementById('notif-btn');
+  if (!btn || !('serviceWorker' in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    updateNotifBtn(!!sub);
+  } catch(e) {}
+}
+
+function updateNotifBtn(active) {
+  const btn = document.getElementById('notif-btn');
+  if (!btn) return;
+  if (active) {
+    btn.textContent = '🔔 NOTIFICAÇÕES ATIVAS';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+  } else {
+    btn.textContent = '🔔 ATIVAR NOTIFICAÇÕES';
+    btn.style.borderColor = 'var(--border2)';
+    btn.style.color = 'var(--muted)';
+  }
+}
+
+async function sendPushNotification(title, body, data = {}) {
+  if (!currentUser) return;
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/push-notify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON}` },
+      body: JSON.stringify({ user_id: currentUser.id, title, body, data })
+    });
+  } catch(e) { console.log('Push error:', e); }
 }
 
 // ── HELPERS ───────────────────────────────────────────────────
